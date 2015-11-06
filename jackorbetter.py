@@ -34,6 +34,7 @@ def jack_or_better_pay_of(cards):
     max_suits = max(same_suits.values())
     sorted_cards = sorted(cards)
     if (sorted_cards[4][0] - sorted_cards[0][0] == 4):
+	# e.g. 4, 5, 6, 7, 8
         straight = True
     elif (sorted_cards[0][0] == 1 and
          sorted_cards[1][0] == 10 and
