@@ -1,5 +1,5 @@
-import random
-from collections import Counter
+import random, sys
+from collections import Counter, OrderedDict
 
 suits = ('Spade', 'Heart', 'Club', 'Diamond')
 numbers = range(1,14)
@@ -33,21 +33,23 @@ def jack_or_better_pay_of(cards):
     same_cards = max(same_nums.values())
     max_suits = max(same_suits.values())
     sorted_cards = sorted(cards)
-    if (sorted_cards[4][0] - sorted_cards[0][0] == 4):
 	# e.g. 4, 5, 6, 7, 8
-        straight = True
-    elif (sorted_cards[0][0] == 1 and
-         sorted_cards[1][0] == 10 and
-         sorted_cards[4][0] == 13):
-        # 10, J, Q, K, A (Royal)
-        if max_suits == 5:
-            return 'Royal Flush'
-        straight = True
-    else:
-        straight = False
+    straight = True
+    royal = False
+    for i in [4, 3, 2, 1]:
+        if sorted_cards[i][0] - sorted_cards[i - 1][0] != 1:
+            if i == 1:
+                if sorted_cards[0][0] == 1 and sorted_cards[1][0] == 10:
+                    royal = True
+                    break
+            straight = False
+            break
     # Straight Flush
     if (max_suits == 5 and straight):
-        return 'Straight Flush'
+        if royal:
+            return 'Royal Flush'
+        else:
+            return 'Straight Flush'
     # Four of a Kind
     if (same_cards == 4):
         return 'Four of a Kind'
@@ -57,12 +59,7 @@ def jack_or_better_pay_of(cards):
     # Flush
     if (max_suits == 5):
         return 'Flush'
-    # Straight
-    sorted_cards = sorted(cards)
-    if (sorted_cards[4][0] - sorted_cards[0][0] == 4 or
-        (sorted_cards[0][0] == 1) and
-         sorted_cards[1][0] == 10 and
-         sorted_cards[4][0] == 13):
+    if straight:
         return 'Straight'
     # Three of a Kind
     if (same_cards == 3):
@@ -82,14 +79,14 @@ def jack_or_better_pay_of(cards):
         return 'Jack or Better'
 
     return 'Nothing'
-    
+
 def show_cards(cards):
     for card in cards:
         print '%s' % labels[card[0]].center(7),
     print '\n' + ('%s ' % 'of'.center(7)) * len(cards)
     for card in cards:
         print '%s' % card[1].center(7),
-    print '\n' + (('-' * 5).center(7) + ' ') * len(cards) 
+    print '\n' + (('-' * 5).center(7) + ' ') * len(cards)
     for i in range(len(cards)):
         print '%s' % str(i + 1).center(7),
     print '\n'
@@ -98,25 +95,30 @@ def replace_cards(cards, deck, keeps):
     for i in range(5):
         if (i not in keeps):
             cards[i] = deck[i]  # easier than deck.pop()
-        
+
 
 ## main program
 
 random.shuffle(deck)
 
 for p, i in Counter(pay_table).most_common():
-    print p.ljust(15), i 
+    if i == 0:
+        print
+    else:
+        print p.ljust(15), i
 
 cards = []
 for i in range(5):
     cards.append(deck.pop())
 
 show_cards(cards)
-print "Your current hand has %s." % jack_or_better_pay_of(cards)
+pay = jack_or_better_pay_of(cards)
+if pay != 'Nothing':
+    print "Your have %s!!!" % pay
 # r = '1, 2 , 4'
 while True:
     try:
-        r = raw_input('Cards you want to KEEP (e.g. 1,3,5): ')
+        r = raw_input('Cards you want to KEEP (e.g. 1,3,5 or 135): ')
         keeps = r.replace(',','').replace(' ','')
         keeps = map(int, keeps)
         keeps = map((-1).__add__, keeps)
@@ -126,20 +128,32 @@ while True:
         print 'Invalid input "%s"' % r
         continue
     break
-
+for i in keeps:
+    print 'Keeping card %i' % (i + 1)
 backup = deck[:]
 replace_cards(cards, deck, keeps)
 show_cards(cards)
 payout = jack_or_better_pay_of(cards)
 print 'You got %s.\nYour payout is %d' % (payout, pay_table[payout])
 
-print 'Your expected payout is ',
 netpay = 0
-trials = 100000
+if len(sys.argv) == 2:
+    trials = int(sys.argv[1])
+else:
+    trials = 10000
+print 'Simulating %i hands of play using same hand...' % trials
+stats = OrderedDict(sorted(pay_table.items(), key=lambda x: x[1],
+                    reverse=True))
+for i in stats:
+    stats[i] = 0
 for i in xrange(trials):
     random.shuffle(backup)
     replace_cards(cards, backup, keeps)
-    netpay += pay_table[jack_or_better_pay_of(cards)]
-print '%f' % (float(netpay) / trials)
-
-
+    pay = jack_or_better_pay_of(cards)
+    stats[pay] += 1
+    netpay += pay_table[pay]
+print 'Statistics:'
+for i in stats:
+    if stats[i] and i != 'Nothing':
+        print '%i %s (%f)' % (stats[i], i, float(stats[i]) / trials)
+print 'Your expected payout is $%f' % (float(netpay) / trials)

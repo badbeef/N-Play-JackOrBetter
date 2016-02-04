@@ -259,7 +259,7 @@ replay:
 
     payid = jack_or_better_pay_of(&hand);
     if (payid) {
-        printf("You have %s!!! ", pay_table[payid].str);
+        printf("You have %s!!!\n", pay_table[payid].str);
     }
     /* replace cards */
     printf("Cards to keep (e.g. '135'):");
