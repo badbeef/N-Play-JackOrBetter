@@ -1,4 +1,4 @@
-# N-Play-JackOrBetter
+# N-Play-JacksOrBetter
 
 This is my first Python program to help me learn Python.
 
